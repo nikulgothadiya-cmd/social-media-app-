@@ -4,6 +4,7 @@ import Feed from "./pages/Feed.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Profile from "./pages/Profile.jsx";
+import EditProfile from "./pages/EditProfile.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import Saved from "./pages/Saved.jsx";
 import { clearToken, getToken } from "./api/token.js";
@@ -77,6 +78,7 @@ export default function App() {
           <Route path="/login" element={<Login onAuthChange={setIsAuthed} />} />
           <Route path="/register" element={<Register onAuthChange={setIsAuthed} />} />
           <Route path="/u/:username" element={<Profile />} />
+          <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/saved" element={<Saved />} />
