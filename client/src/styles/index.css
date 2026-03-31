@@ -139,6 +139,16 @@ button:disabled {
   cursor: not-allowed;
 }
 
+button.danger {
+  background: #b42318;
+  box-shadow: 0 6px 16px rgba(180, 35, 24, 0.18);
+}
+
+button.danger:hover:not(:disabled) {
+  opacity: 0.9;
+  box-shadow: 0 8px 20px rgba(180, 35, 24, 0.25);
+}
+
 .linklike {
   background: transparent;
   color: var(--brand);
@@ -147,6 +157,10 @@ button:disabled {
   padding: 6px 10px;
   border-radius: 999px;
   box-shadow: none;
+}
+
+.linklike.danger {
+  color: #b42318;
 }
 
 .list {
