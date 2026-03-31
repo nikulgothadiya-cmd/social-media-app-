@@ -15,6 +15,7 @@ import Explore from "./pages/Explore.jsx";
 import Search from "./pages/Search.jsx";
 import Admin from "./pages/Admin.jsx";
 import Reels from "./pages/Reels.jsx";
+import Stories from "./pages/Stories.jsx";
 import CreateResponse from "./pages/CreateResponse.jsx";
 
 export default function App() {
@@ -58,6 +59,7 @@ export default function App() {
               <Link to="/saved">Saved</Link>
               <Link to="/explore">Explore</Link>
               <Link to="/search">Search</Link>
+              <Link to="/stories">Stories</Link>
               <Link to="/reels">Reels</Link>
               <Link to="/response/new">Create Response</Link>
               {me?.role === "admin" && <Link to="/admin">Admin</Link>}
@@ -83,6 +85,7 @@ export default function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/saved" element={<Saved />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/stories" element={<Stories />} />
           <Route path="/search" element={<Search />} />
           <Route path="/reels" element={<Reels />} />
           <Route path="/admin" element={<Admin />} />
