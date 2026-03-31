@@ -16,16 +16,35 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   margin: 0;
   background: var(--bg);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html {
+  -webkit-touch-callout: none;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+p,
+textarea,
+.comment,
+.post {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .app {
@@ -1296,23 +1315,645 @@ button.danger:hover:not(:disabled) {
   color: #6b7280;
 }
 
-@media (max-width: 720px) {
-  .topbar nav {
-    flex-wrap: wrap;
+@media (max-width: 1024px) {
+  .container {
+    max-width: 100%;
+    padding: 0 12px 48px;
   }
-  .chat {
-    grid-template-columns: 1fr;
-  }
-  .explore-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .response-hero,
+  
   .response-layout {
     grid-template-columns: 1fr;
   }
   
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  /* Typography Adjustments */
+  h1 {
+    font-size: 24px;
+  }
+  
+  h2 {
+    font-size: 18px;
+  }
+  
+  /* Topbar Adjustments */
+  .topbar {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .brand {
+    font-size: 18px;
+  }
+  
+  .topbar nav {
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    order: 3;
+  }
+  
+  .topbar nav a,
+  .topbar nav button.linklike {
+    padding: 6px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex: 0 1 auto;
+  }
+  
+  /* Layout Adjustments */
+  .container {
+    max-width: 100%;
+    padding: 12px 12px 48px;
+  }
+  
+  .card {
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  
+  /* Form Elements */
+  input,
+  textarea {
+    padding: 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  
+  /* Buttons */
+  button {
+    padding: 12px 14px;
+    font-size: 14px;
+    min-height: 44px; /* Touch target size */
+  }
+  
+  button.ghost {
+    min-height: 44px;
+  }
+  
+  .linklike {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+  
+  /* Post Components */
+  .post-header {
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+  }
+  
+  .post-author {
+    gap: 8px;
+  }
+  
+  .post-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .post-owner-actions {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  
+  .post-owner-actions button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .avatar.large {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .avatar.small {
+    width: 28px;
+    height: 28px;
+  }
+  
+  /* Post Actions */
+  .post-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  
+  .post-actions button {
+    flex: 1;
+    min-width: 100px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  /* Comments Section */
+  .comments {
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+  
+  .comment {
+    padding: 6px 0;
+    font-size: 13px;
+  }
+  
+  .comment-form {
+    gap: 6px;
+  }
+  
+  .comment-form input {
+    font-size: 14px;
+  }
+  
+  .comment-form button {
+    flex-shrink: 0;
+    padding: 10px 12px;
+  }
+  
+  /* Tags and Hashtags */
+  .tag-chip {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+  
+  .trending {
+    gap: 6px;
+  }
+  
+  /* Grid Layouts */
+  .chat {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .chat-sidebar {
+    display: none; /* Hide on mobile, use tabs instead */
+  }
+  
+  .chat-panel {
+    min-height: auto;
+  }
+  
+  .chat-messages {
+    max-height: 300px;
+  }
+  
+  /* Stories */
+  .stories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+  
+  .story-thumbnail {
+    aspect-ratio: 9 / 16;
+  }
+  
+  .story-viewer {
+    max-width: 100%;
+    border-radius: 0;
+    max-height: 100vh;
+  }
+  
+  .story-viewer-image {
+    height: 100vh;
+  }
+  
+  .story-nav-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  
+  .story-counter {
+    font-size: 11px;
+  }
+  
+  .story-create-form {
+    margin: 0;
+    border-radius: 12px;
+  }
+  
+  /* Profile Section */
   .profile-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .profile-stats {
+    gap: 12px;
+    font-size: 13px;
+  }
+  
+  .profile-card {
+    gap: 12px;
+  }
+  
+  /* User List */
+  .user-list-item {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  
+  .user-list-item a {
+    gap: 8px;
+  }
+  
+  /* Edit Form */
+  .edit-form {
+    gap: 6px;
+  }
+  
+  .edit-actions {
+    gap: 8px;
+    flex-direction: column;
+  }
+  
+  .edit-actions button {
+    flex: 1;
+  }
+  
+  /* Carousel Controls */
+  .carousel-controls {
+    gap: 8px;
+  }
+  
+  .carousel-controls button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  /* Notifications */
+  .notif-list {
+    gap: 8px;
+  }
+  
+  .notif-item {
+    padding: 8px 10px;
+  }
+  
+  /* Search */
+  .search-item {
+    padding: 6px 0;
+  }
+  
+  /* Response/Create Page */
+  .response-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .response-hero {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+  
+  .response-hero h1 {
+    font-size: 22px;
+  }
+  
+  .response-tools button {
+    flex: 1;
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  
+  /* Modal Adjustments */
+  .modal-overlay {
+    padding: 12px;
+  }
+  
+  .modal {
+    max-width: 100%;
+    border-radius: 12px;
+  }
+  
+  /* Explore Grid */
+  .explore-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  
+  .explore-item {
+    min-height: 100px;
+  }
+  
+  /* Analytics Grid */
+  .analytics-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra Small Screens */
+  
+  /* Topbar */
+  .topbar {
+    padding: 8px 10px;
+  }
+  
+  .brand {
+    font-size: 16px;
+  }
+  
+  .topbar nav {
+    gap: 4px;
+  }
+  
+  .topbar nav a,
+  .topbar nav button.linklike {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  
+  /* Headings */
+  h1 {
+    font-size: 20px;
+  }
+  
+  h2,
+  .section-title {
+    font-size: 16px;
+  }
+  
+  /* Container */
+  .container {
+    padding: 8px 8px 40px;
+  }
+  
+  .card {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+  }
+  
+  /* Forms */
+  input,
+  textarea {
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  
+  /* Buttons */
+  button {
+    padding: 10px 12px;
+    font-size: 13px;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  button.ghost {
+    width: 100%;
+  }
+  
+  /* Two Button Layout */
+  .edit-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .edit-actions button {
+    width: 100%;
+    flex: none;
+  }
+  
+  /* Post Header */
+  .post-header {
+    gap: 6px;
+  }
+  
+  .post-author {
+    gap: 6px;
+  }
+  
+  .avatar {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .avatar.large {
+    width: 48px;
+    height: 48px;
+  }
+  
+  /* Post Actions - Stack on mobile */
+  .post-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .post-actions button {
+    width: 100%;
+  }
+  
+  /* Tags */
+  .trending {
+    flex-direction: column;
+  }
+  
+  .tag-chip {
+    width: 100%;
+    text-align: left;
+  }
+  
+  .upload-row {
+    gap: 8px;
+  }
+  
+  /* Stories */
+  .stories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 6px;
+  }
+  
+  .story-form-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .story-form-actions button {
+    width: 100%;
+  }
+  
+  .story-create-prompt {
+    text-align: center;
+  }
+  
+  .story-create-btn {
+    width: 100%;
+    padding: 12px;
+  }
+  
+  /* Profile */
+  .profile-header {
+    flex-direction: column;
+  }
+  
+  .profile-stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .profile-stats button {
+    width: 100%;
+  }
+  
+  /* User List */
+  .user-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  
+  .user-list-item .badge {
+    align-self: flex-start;
+  }
+  
+  /* Chat */
+  .chat-input {
+    gap: 6px;
+  }
+  
+  .chat-input input {
+    margin-bottom: 0;
+  }
+  
+  .chat-input button {
+    flex-shrink: 0;
+    width: auto;
+    margin: 0;
+  }
+  
+  /* Response Hero */
+  .response-hero {
+    padding: 16px;
+  }
+  
+  .response-hero h1 {
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+  
+  .response-hero-actions {
+    flex-direction: column;
+  }
+  
+  .response-hero-actions button {
+    width: 100%;
+  }
+  
+  /* Explore Grid */
+  .explore-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .explore-item {
+    min-height: 200px;
+  }
+  
+  /* Modal */
+  .modal-overlay {
+    padding: 8px;
+  }
+  
+  .modal {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  
+  /* Carousel */
+  .carousel-controls {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .carousel-controls button {
+    width: 100%;
+    flex: 1;
+  }
+  
+  /* Edit Form */
+  .edit-form {
+    gap: 8px;
+  }
+  
+  .edit-form button {
+    width: 100%;
+  }
+  
+  /* Notifications */
+  .notif-item {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  /* Text Adjustments */
+  .small {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Ultra Small Screens (old phones) */
+  
+  .brand {
+    font-size: 14px;
+  }
+  
+  h1 {
+    font-size: 18px;
+  }
+  
+  .container {
+    padding: 6px 6px 36px;
+  }
+  
+  .card {
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .avatar {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .avatar.large {
+    width: 40px;
+    height: 40px;
+  }
+  
+  button {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  
+  .post-actions button {
+    padding: 8px;
+    font-size: 11px;
+  }
+  
+  .topbar nav a,
+  .topbar nav button.linklike {
+    padding: 3px 6px;
+    font-size: 11px;
   }
 }
