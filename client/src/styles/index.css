@@ -237,6 +237,9 @@ button.danger:hover:not(:disabled) {
 
 .post-image {
   width: 100%;
+  max-height: 500px;
+  height: auto;
+  object-fit: cover;
   border-radius: 14px;
   margin: 12px 0;
   border: 1px solid var(--border);
@@ -1598,6 +1601,15 @@ button.danger:hover:not(:disabled) {
     font-size: 12px;
   }
   
+  .post-image {
+    max-height: 400px;
+    height: auto;
+  }
+  
+  .carousel {
+    max-height: 420px;
+  }
+  
   /* Notifications */
   .notif-list {
     gap: 8px;
@@ -1880,6 +1892,17 @@ button.danger:hover:not(:disabled) {
   }
   
   /* Carousel */
+  .carousel {
+    max-height: 350px;
+    overflow: hidden;
+  }
+  
+  .post-image {
+    max-height: 350px;
+    width: 100%;
+    height: auto;
+  }
+  
   .carousel-controls {
     flex-direction: column;
     gap: 6px;
@@ -1908,6 +1931,11 @@ button.danger:hover:not(:disabled) {
   /* Text Adjustments */
   .small {
     font-size: 11px;
+  }
+  
+  .post-image {
+    max-height: 300px;
+    width: 100%;
   }
 }
 

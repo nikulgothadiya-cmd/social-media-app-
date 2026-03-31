@@ -1,179 +1,70 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import api from "../api/client.js";
+import api, { normalizeMediaUrl } from "../api/client.js";
 
 export default function PostItem({
   post,
-  isAuthed,
-  isAuthor,
-  onDelete,
-  onEdit,
-  onAnalytics,
+  isAuthed = false,
+  isAuthor = false,
+  onDelete = () => {},
+  onAnalytics = () => {},
   bookmarkIds = new Set(),
-  onBookmarkChange,
-  tagFilter,
-  onTagClick
+  onBookmarkChange = () => {},
+  onTagClick = () => {},
+  onEdit = () => {}
 }) {
-  const [editingId, setEditingId] = useState(null);
-  const [editContent, setEditContent] = useState(post.content || "");
-  const [editImageUrl, setEditImageUrl] = useState(post.imageUrl || "");
-  const [historyId, setHistoryId] = useState(null);
-  const [imageIndex, setImageIndex] = useState(0);
-  const [commentDrafts, setCommentDrafts] = useState({});
-  const [expanded, setExpanded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const isBookmarked = bookmarkIds.has(post?._id);
 
-  const handleStartEdit = () => {
-    setEditingId(post._id);
-    setEditContent(post.content || "");
-    setEditImageUrl(post.imageUrl || "");
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditContent("");
-    setEditImageUrl("");
-  };
-
-  const handleSaveEdit = async () => {
-    const payload = { content: editContent };
-    if (!post.images?.length) {
-      payload.imageUrl = editImageUrl;
+  const handleBookmarkToggle = async () => {
+    if (!isAuthed || !post?._id) return;
+    setBusy(true);
+    try {
+      if (isBookmarked) {
+        await api.delete(`/users/me/bookmarks/${post._id}`);
+      } else {
+        await api.post(`/users/me/bookmarks/${post._id}`);
+      }
+      onBookmarkChange();
+    } catch (err) {
+      console.error("Bookmark toggle failed", err);
+    } finally {
+      setBusy(false);
     }
-    await api.put(`/posts/${post._id}`, payload);
-    handleCancelEdit();
-    onEdit?.();
   };
 
-  const handleLike = async () => {
-    await api.post(`/posts/${post._id}/like`);
-    onEdit?.();
-  };
+  if (!post) return null;
 
-  const handleBookmark = async () => {
-    if (bookmarkIds.has(post._id)) {
-      await api.delete(`/users/me/bookmarks/${post._id}`);
-    } else {
-      await api.post("/users/me/bookmarks", { postId: post._id });
-    }
-    onBookmarkChange?.();
-  };
-
-  const handleCommentChange = (value) => {
-    setCommentDrafts((prev) => ({ ...prev, [post._id]: value }));
-  };
-
-  const handleAddComment = async (e) => {
-    e.preventDefault();
-    const text = (commentDrafts[post._id] || "").trim();
-    if (!text) return;
-    await api.post(`/posts/${post._id}/comments`, { text });
-    setCommentDrafts((prev) => ({ ...prev, [post._id]: "" }));
-    onEdit?.();
-  };
+  const primaryImage =
+    post.images?.length ? normalizeMediaUrl(post.images[0]) : normalizeMediaUrl(post.imageUrl);
+  const videoUrl = normalizeMediaUrl(post.videoUrl);
 
   return (
-    <article className="card">
+    <article className="card post-compact">
       <div className="post-header">
-        <div className="post-author">
-          {post.author?.avatarUrl ? (
-            <img
-              className="avatar"
-              src={post.author.avatarUrl}
-              alt={post.author.username}
-            />
-          ) : (
-            <div className="avatar fallback">{post.author?.username?.[0] || "U"}</div>
-          )}
-          {post.author?.username ? (
-            <Link to={`/u/${post.author.username}`} className="user-link">
-              <strong>
-                @{post.author.username}
-                {post.author?.verified && <span className="badge-verified">✓</span>}
-              </strong>
-            </Link>
-          ) : (
-            <strong>@user</strong>
-          )}
-        </div>
-        <div className="post-meta">
-          <span className="muted">{new Date(post.createdAt).toLocaleString()}</span>
-          {isAuthed && isAuthor && (
-            <div className="post-owner-actions">
-              <button className="linklike" onClick={() => onAnalytics?.(post)}>
-                Stats
-              </button>
-              <button className="linklike" onClick={handleStartEdit}>
-                Edit
-              </button>
-              <button
-                className="linklike danger"
-                onClick={() => onDelete?.(post._id)}
-              >
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
+        <strong>@{post.author?.username || "user"}</strong>
+        <span className="muted">
+          {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
+        </span>
       </div>
 
-      {editingId === post._id ? (
-        <div className="edit-form">
-          <textarea
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            rows={3}
-          />
-          {!post.images?.length && (
-            <input
-              placeholder="Image URL (optional)"
-              value={editImageUrl}
-              onChange={(e) => setEditImageUrl(e.target.value)}
-            />
-          )}
-          <div className="edit-actions">
-            <button type="button" onClick={handleSaveEdit}>
-              Save
-            </button>
-            <button type="button" className="linklike" onClick={handleCancelEdit}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <p>{post.content}</p>
-          {post.editedAt && (
-            <button
-              type="button"
-              className="linklike"
-              onClick={() => setHistoryId(historyId === post._id ? null : post._id)}
-            >
-              Edited
-            </button>
-          )}
-        </>
+      <p>{post.content}</p>
+
+      {videoUrl && (
+        <video className="post-video" src={videoUrl} controls loop />
       )}
 
-      {historyId === post._id && post.edits?.length ? (
-        <div className="edit-history">
-          {post.edits.map((edit, idx) => (
-            <div key={`${post._id}-edit-${idx}`} className="edit-history-item">
-              <span className="muted small">
-                {new Date(edit.editedAt).toLocaleString()}
-              </span>
-              <p>{edit.content}</p>
-            </div>
-          ))}
-        </div>
+      {primaryImage ? (
+        <img className="post-image" src={primaryImage} alt="Post" />
       ) : null}
 
       {post.tags?.length ? (
-        <div className="tag-list">
+        <div className="tag-row">
           {post.tags.map((tag) => (
             <button
               key={tag}
-              className="tag-chip"
-              onClick={() => onTagClick?.(tag)}
+              className="tag"
+              onClick={() => onTagClick(tag)}
+              disabled={busy}
             >
               #{tag}
             </button>
@@ -181,103 +72,25 @@ export default function PostItem({
         </div>
       ) : null}
 
-      {post.images?.length ? (
-        <div className="carousel">
-          <img
-            className="post-image"
-            src={post.images[imageIndex]}
-            alt="Post"
-          />
-          {post.images.length > 1 && (
-            <div className="carousel-controls">
-              <button
-                type="button"
-                onClick={() =>
-                  setImageIndex(imageIndex === 0 ? post.images.length - 1 : imageIndex - 1)
-                }
-              >
-                Prev
-              </button>
-              <span className="muted small">
-                {imageIndex + 1}/{post.images.length}
-              </span>
-              <button
-                type="button"
-                onClick={() => setImageIndex((imageIndex + 1) % post.images.length)}
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </div>
-      ) : post.imageUrl ? (
-        <img className="post-image" src={post.imageUrl} alt="Post" />
-      ) : null}
-
-      {post.videoUrl && (
-        <video className="post-video" src={post.videoUrl} controls loop />
-      )}
-
-      <div className="post-actions">
-        <button onClick={handleLike} disabled={!isAuthed}>
-          {post.likes?.some((like) => like === post._id) ? "Liked" : "Like"} (
-          {post.likes?.length || 0})
-        </button>
-        <button onClick={handleBookmark} disabled={!isAuthed}>
-          {bookmarkIds.has(post._id) ? "Saved" : "Save"}
-        </button>
-        <span className="muted small">{post.comments?.length || 0} comments</span>
-      </div>
-
-      <div className="comments">
-        {expanded ? (
+      <div className="post-actions" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        {isAuthed && (
+          <button onClick={handleBookmarkToggle} disabled={busy}>
+            {isBookmarked ? "Unsave" : "Save"}
+          </button>
+        )}
+        {isAuthor && (
           <>
-            {post.comments?.length ? (
-              post.comments.map((comment) => (
-                <div key={comment._id} className="comment">
-                  <strong>
-                    @{comment.user?.username || "user"}
-                    {comment.user?.verified && <span className="badge-verified">✓</span>}
-                  </strong>
-                  <span className="muted small">
-                    {new Date(comment.createdAt).toLocaleString()}
-                  </span>
-                  <p>{comment.text}</p>
-                </div>
-              ))
-            ) : (
-              <p className="muted small">No comments yet.</p>
-            )}
-            {isAuthed ? (
-              <form className="comment-form" onSubmit={handleAddComment}>
-                <input
-                  placeholder="Write a comment..."
-                  value={commentDrafts[post._id] || ""}
-                  onChange={(e) => handleCommentChange(e.target.value)}
-                />
-                <button type="submit">Comment</button>
-              </form>
-            ) : (
-              <p className="muted small">Login to comment.</p>
-            )}
-            <button
-              className="linklike"
-              onClick={() => setExpanded(false)}
-              style={{ marginTop: "8px" }}
-            >
-              Hide comments
+            <button onClick={() => onEdit(post)} disabled={busy}>
+              Edit
+            </button>
+            <button onClick={() => onDelete(post._id)} disabled={busy}>
+              Delete
             </button>
           </>
-        ) : (
-          post.comments?.length > 0 && (
-            <button
-              className="linklike"
-              onClick={() => setExpanded(true)}
-            >
-              Show {post.comments.length} comment{post.comments.length !== 1 ? "s" : ""}
-            </button>
-          )
         )}
+        <button onClick={() => onAnalytics(post)} disabled={busy}>
+          Analytics
+        </button>
       </div>
     </article>
   );

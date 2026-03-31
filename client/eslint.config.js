@@ -15,9 +15,23 @@ export default [
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
       globals: {
         window: "readonly",
-        document: "readonly"
+        document: "readonly",
+        localStorage: "readonly",
+        console: "readonly",
+        confirm: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        FormData: "readonly",
+        IntersectionObserver: "readonly"
       }
     },
     rules: {
@@ -25,7 +39,9 @@ export default [
       "react/prop-types": "off",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }]
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      "react/jsx-uses-vars": "error",
+      "react/jsx-uses-react": "off"
     }
   }
 ];

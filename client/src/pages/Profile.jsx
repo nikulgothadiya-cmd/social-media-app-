@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import api from "../api/client.js";
+import api, { normalizeMediaUrl } from "../api/client.js";
 import { getToken } from "../api/token.js";
 
 export default function Profile() {
@@ -139,7 +139,7 @@ export default function Profile() {
           {profile.avatarUrl ? (
             <img
               className="avatar large"
-              src={profile.avatarUrl}
+              src={normalizeMediaUrl(profile.avatarUrl)}
               alt={profile.username}
             />
           ) : (
@@ -153,7 +153,7 @@ export default function Profile() {
                 @{profile.username}
               </h1>
               {profile.verified && (
-                <span className="badge-verified">✓</span>
+                <span className="badge-verified">&#10003;</span>
               )}
             </div>
             <p className="muted" style={{ marginBottom: "12px" }}>
@@ -227,8 +227,9 @@ export default function Profile() {
               className="linklike"
               onClick={closeUserList}
               style={{ padding: "6px 12px" }}
+              aria-label="Close list"
             >
-              ✕
+              &#10005;
             </button>
           </div>
           {listUsers.length ? (
@@ -239,7 +240,7 @@ export default function Profile() {
                     {user.avatarUrl ? (
                       <img
                         className="avatar small"
-                        src={user.avatarUrl}
+                        src={normalizeMediaUrl(user.avatarUrl)}
                         alt={user.username}
                       />
                     ) : (
@@ -289,15 +290,15 @@ export default function Profile() {
               {post.videoUrl && (
                 <video
                   className="post-video"
-                  src={post.videoUrl}
+                  src={normalizeMediaUrl(post.videoUrl)}
                   controls
                   loop
                 />
               )}
               {post.images?.length ? (
-                <img className="post-image" src={post.images[0]} alt="Post" />
+                <img className="post-image" src={normalizeMediaUrl(post.images[0])} alt="Post" />
               ) : post.imageUrl ? (
-                <img className="post-image" src={post.imageUrl} alt="Post" />
+                <img className="post-image" src={normalizeMediaUrl(post.imageUrl)} alt="Post" />
               ) : null}
             </article>
           ))

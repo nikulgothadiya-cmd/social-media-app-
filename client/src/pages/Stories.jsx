@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
-import api from "../api/client.js";
+import api, { normalizeMediaUrl } from "../api/client.js";
 import { getToken } from "../api/token.js";
 import StoryViewer from "../components/StoryViewer.jsx";
 
@@ -56,11 +55,10 @@ export default function Stories() {
       const { data } = await api.post("/uploads", form, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      const serverBase = api.defaults.baseURL?.replace("/api", "") || "http://localhost:5000";
       if (data.urls?.[0]) {
-        setStoryImageUrl(`${serverBase}${data.urls[0]}`);
+        setStoryImageUrl(normalizeMediaUrl(data.urls[0]));
       } else if (data.url) {
-        setStoryImageUrl(`${serverBase}${data.url}`);
+        setStoryImageUrl(normalizeMediaUrl(data.url));
       }
     } catch (err) {
       setError("Failed to upload image");
@@ -148,7 +146,7 @@ export default function Stories() {
 
             {storyImageUrl && (
               <div className="story-preview">
-                <img src={storyImageUrl} alt="Story preview" />
+                <img src={normalizeMediaUrl(storyImageUrl)} alt="Story preview" />
               </div>
             )}
 
@@ -198,7 +196,7 @@ export default function Stories() {
                 role="button"
                 tabIndex={0}
               >
-                <img src={story.imageUrl} alt="Your story" />
+                <img src={normalizeMediaUrl(story.imageUrl)} alt="Your story" />
                 <div className="story-thumbnail-overlay">
                   <p className="muted small">
                     {new Date(story.createdAt).toLocaleString()}
@@ -236,7 +234,7 @@ export default function Stories() {
                   role="button"
                   tabIndex={0}
                 >
-                  <img src={story.imageUrl} alt={story.author?.username} />
+                  <img src={normalizeMediaUrl(story.imageUrl)} alt={story.author?.username} />
                   <div className="story-thumbnail-overlay">
                     <div className="story-thumbnail-author">
                       <strong>@{story.author?.username || "user"}</strong>

@@ -24,12 +24,24 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
+// CORS configuration - allow all origins in development
+const corsOrigin = process.env.NODE_ENV === "production" 
+  ? process.env.CLIENT_ORIGIN 
+  : "*";
+
 const io = new Server(server, {
-  cors: { origin: process.env.CLIENT_ORIGIN || "http://localhost:5173", credentials: true }
+  cors: { 
+    origin: corsOrigin, 
+    credentials: corsOrigin !== "*"
+  }
 });
 setIo(io);
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || "http://localhost:5173", credentials: true }));
+app.use(cors({ 
+  origin: corsOrigin, 
+  credentials: corsOrigin !== "*"
+}));
 app.use(express.json());
 app.use(morgan("dev"));
 

@@ -1,4 +1,4 @@
-﻿import { Routes, Route, Link, useNavigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Feed from "./pages/Feed.jsx";
 import Login from "./pages/Login.jsx";
@@ -7,74 +7,28 @@ import Profile from "./pages/Profile.jsx";
 import EditProfile from "./pages/EditProfile.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import Saved from "./pages/Saved.jsx";
-import { clearToken, getToken } from "./api/token.js";
-import api from "./api/client.js";
+import { getToken } from "./api/token.js";
 import Chat from "./pages/Chat.jsx";
-import { resetSocket } from "./api/socket.js";
 import Explore from "./pages/Explore.jsx";
 import Search from "./pages/Search.jsx";
 import Admin from "./pages/Admin.jsx";
 import Reels from "./pages/Reels.jsx";
 import Stories from "./pages/Stories.jsx";
 import CreateResponse from "./pages/CreateResponse.jsx";
+import BottomNav from "./components/BottomNav.jsx";
+import StoriesBar from "./components/StoriesBar.jsx";
 
 export default function App() {
-  const [isAuthed, setIsAuthed] = useState(!!getToken());
-  const [me, setMe] = useState(null);
-  const navigate = useNavigate();
+  const [, setIsAuthed] = useState(!!getToken());
 
   useEffect(() => {
     setIsAuthed(!!getToken());
   }, []);
 
-  useEffect(() => {
-    if (!isAuthed) {
-      setMe(null);
-      return;
-    }
-    api
-      .get("/users/me")
-      .then(({ data }) => setMe(data.user))
-      .catch(() => setMe(null));
-  }, [isAuthed]);
-
-  const handleLogout = () => {
-    clearToken();
-    resetSocket();
-    setIsAuthed(false);
-    navigate("/login");
-  };
-
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="brand">Social Media</div>
-        <nav>
-          <Link to="/">Feed</Link>
-          {isAuthed ? (
-            <>
-              {me?.username && <Link to={`/u/${me.username}`}>My Profile</Link>}
-              <Link to="/chat">Chat</Link>
-              <Link to="/notifications">Notifications</Link>
-              <Link to="/saved">Saved</Link>
-              <Link to="/explore">Explore</Link>
-              <Link to="/search">Search</Link>
-              <Link to="/stories">Stories</Link>
-              <Link to="/reels">Reels</Link>
-              <Link to="/response/new">Create Response</Link>
-              {me?.role === "admin" && <Link to="/admin">Admin</Link>}
-              <button className="linklike" onClick={handleLogout}>Logout</button>
-            </>
-          ) : (
-            <>
-              <Link to="/login">Login</Link>
-              <Link to="/register">Register</Link>
-            </>
-          )}
-        </nav>
-      </header>
-
-      <main className="container">
+      <main className="container" style={{ paddingBottom: "88px" }}>
+        <StoriesBar />
         <Routes>
           <Route path="/" element={<Feed onAuthChange={setIsAuthed} />} />
           <Route path="/login" element={<Login onAuthChange={setIsAuthed} />} />
@@ -92,6 +46,8 @@ export default function App() {
           <Route path="/response/new" element={<CreateResponse />} />
         </Routes>
       </main>
+
+      <BottomNav />
     </div>
   );
 }

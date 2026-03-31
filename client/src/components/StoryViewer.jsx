@@ -1,11 +1,24 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { normalizeMediaUrl } from "../api/client.js";
 
 export default function StoryViewer({ stories, initialIndex = 0, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [progress, setProgress] = useState(0);
 
   const currentStory = stories[currentIndex];
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((idx) => {
+      if (idx + 1 < stories.length) return idx + 1;
+      onClose?.();
+      return idx;
+    });
+  }, [stories.length, onClose]);
+
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((idx) => (idx > 0 ? idx - 1 : idx));
+  }, []);
 
   useEffect(() => {
     setProgress(0);
@@ -15,65 +28,108 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }) {
           handleNext();
           return 0;
         }
-        return prev + (100 / 3000); // 3 seconds per story
+        return prev + 100 / 3000; // 3 seconds per story
       });
     }, 50);
-
     return () => clearInterval(interval);
-  }, [currentIndex]);
+  }, [currentIndex, handleNext]);
 
-  const handleNext = () => {
-    if (currentIndex + 1 < stories.length) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      onClose?.();
-    }
-  };
+  if (!currentStory) return null;
 
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  if (!currentStory) {
-    return null;
-  }
-
-  const timeLeft = currentStory.expiresAt 
+  const timeLeft = currentStory.expiresAt
     ? Math.max(0, Math.floor((new Date(currentStory.expiresAt) - new Date()) / 1000))
     : null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="story-viewer" onClick={(e) => e.stopPropagation()}>
-        {/* Progress bar */}
-        <div className="story-progress-container">
+      <div
+        className="story-viewer"
+        onClick={(e) => e.stopPropagation()}
+        style={{ position: "relative", overflow: "hidden" }}
+      >
+        {/* Progress bar - white timeline at top */}
+        <div
+          className="story-progress-container"
+          style={{
+            position: "absolute",
+            top: "10px",
+            left: "12px",
+            right: "12px",
+            display: "flex",
+            gap: "6px",
+            pointerEvents: "none"
+          }}
+        >
           {stories.map((_, idx) => (
             <div
               key={idx}
-              className="story-progress-bar"
               style={{
-                opacity: idx < currentIndex ? 1 : idx === currentIndex ? 1 : 0.3,
-                width: `${idx < currentIndex ? 100 : idx === currentIndex ? progress : 0}%`
+                flex: 1,
+                height: "4px",
+                background: "rgba(255,255,255,0.25)",
+                borderRadius: "999px",
+                overflow: "hidden"
               }}
-            />
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${idx < currentIndex ? 100 : idx === currentIndex ? progress : 0}%`,
+                  background: "#fff",
+                  transition: "width 50ms linear"
+                }}
+              />
+            </div>
           ))}
         </div>
 
-        {/* Story image */}
-        <img
-          src={currentStory.imageUrl}
-          alt={currentStory.author?.username}
-          className="story-viewer-image"
-        />
+        {/* Image + tap zones */}
+        <div style={{ position: "relative" }}>
+          <img
+            src={normalizeMediaUrl(currentStory.imageUrl)}
+            alt={currentStory.author?.username}
+            className="story-viewer-image"
+          />
+          <button
+            type="button"
+            aria-label="Previous story"
+            onClick={handlePrev}
+            disabled={currentIndex === 0}
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: "40%",
+              background: "transparent",
+              border: "none",
+              cursor: currentIndex === 0 ? "default" : "pointer"
+            }}
+          />
+          <button
+            type="button"
+            aria-label="Next story"
+            onClick={handleNext}
+            disabled={currentIndex === stories.length - 1}
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: "40%",
+              background: "transparent",
+              border: "none",
+              cursor: currentIndex === stories.length - 1 ? "default" : "pointer"
+            }}
+          />
+        </div>
 
-        {/* Header with author info */}
+        {/* Header */}
         <div className="story-viewer-header">
           <div className="story-viewer-author">
             {currentStory.author?.avatarUrl ? (
               <img
-                src={currentStory.author.avatarUrl}
+                src={normalizeMediaUrl(currentStory.author.avatarUrl)}
                 alt={currentStory.author.username}
                 className="avatar small"
               />
@@ -97,14 +153,14 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }) {
           )}
         </div>
 
-        {/* Story text overlay */}
+        {/* Text overlay */}
         {currentStory.text && (
           <div className="story-viewer-text">
             <p>{currentStory.text}</p>
           </div>
         )}
 
-        {/* Navigation actions */}
+        {/* Footer nav */}
         <div className="story-viewer-actions">
           <button
             className="story-nav-btn prev"
@@ -127,12 +183,8 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose }) {
           </button>
         </div>
 
-        {/* Close button */}
-        <button
-          className="story-close-btn"
-          onClick={onClose}
-          aria-label="Close story viewer"
-        >
+        {/* Close */}
+        <button className="story-close-btn" onClick={onClose} aria-label="Close story viewer">
           ✕
         </button>
       </div>

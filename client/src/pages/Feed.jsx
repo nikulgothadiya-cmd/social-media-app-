@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../api/client.js";
+import api, { normalizeMediaUrl } from "../api/client.js";
 import { getToken } from "../api/token.js";
 
 export default function Feed({ onAuthChange }) {
@@ -206,11 +206,10 @@ export default function Feed({ onAuthChange }) {
     const { data } = await api.post("/uploads", form, {
       headers: { "Content-Type": "multipart/form-data" }
     });
-    const serverBase = api.defaults.baseURL?.replace("/api", "") || "http://localhost:5000";
     if (data.urls?.[0]) {
-      setStoryImageUrl(`${serverBase}${data.urls[0]}`);
+      setStoryImageUrl(normalizeMediaUrl(data.urls[0]));
     } else if (data.url) {
-      setStoryImageUrl(`${serverBase}${data.url}`);
+      setStoryImageUrl(normalizeMediaUrl(data.url));
     }
   };
 
@@ -245,12 +244,11 @@ export default function Feed({ onAuthChange }) {
       const { data } = await api.post("/uploads", form, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      const serverBase = api.defaults.baseURL?.replace("/api", "") || "http://localhost:5000";
       if (data.urls) {
-        setImageUrls(data.urls.map((url) => `${serverBase}${url}`));
+        setImageUrls(data.urls.map((url) => normalizeMediaUrl(url)));
         setImageUrl("");
       } else if (data.url) {
-        setImageUrl(`${serverBase}${data.url}`);
+        setImageUrl(normalizeMediaUrl(data.url));
         setImageUrls([]);
       }
     } finally {
@@ -542,14 +540,14 @@ export default function Feed({ onAuthChange }) {
                 ))}
               </div>
             ) : null}
-            {post.images?.length ? (
-              <div className="carousel">
-                <img
-                  className="post-image"
-                  src={post.images[imageIndex[post._id] || 0]}
-                  alt="Post"
-                />
-                {post.images.length > 1 && (
+          {post.images?.length ? (
+            <div className="carousel">
+              <img
+                className="post-image"
+                src={normalizeMediaUrl(post.images[imageIndex[post._id] || 0])}
+                alt="Post"
+              />
+              {post.images.length > 1 && (
                   <div className="carousel-controls">
                     <button
                       type="button"
@@ -583,10 +581,16 @@ export default function Feed({ onAuthChange }) {
                 )}
               </div>
             ) : (
-              post.imageUrl && <img className="post-image" src={post.imageUrl} alt="Post" />
+              post.imageUrl && (
+                <img
+                  className="post-image"
+                  src={normalizeMediaUrl(post.imageUrl)}
+                  alt="Post"
+                />
+              )
             )}
             {post.videoUrl && (
-              <video className="post-video" src={post.videoUrl} controls loop />
+              <video className="post-video" src={normalizeMediaUrl(post.videoUrl)} controls loop />
             )}
             <div className="post-actions">
               <button onClick={() => handleLike(post._id)} disabled={!isAuthed}>
@@ -670,7 +674,7 @@ export default function Feed({ onAuthChange }) {
         <div className="modal-overlay" onClick={() => setActiveStoryIndex(null)}>
           <div className="story-viewer" onClick={(e) => e.stopPropagation()}>
             <img
-              src={stories[activeStoryIndex].imageUrl}
+              src={normalizeMediaUrl(stories[activeStoryIndex].imageUrl)}
               alt={stories[activeStoryIndex].author?.username}
             />
             <div className="story-viewer-meta">

@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../api/client.js";
 import { getToken } from "../api/token.js";
 import PostItem from "../components/PostItem.jsx";
 
 export default function Saved() {
-  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [me, setMe] = useState(null);
   const [error, setError] = useState("");
@@ -74,15 +72,6 @@ export default function Saved() {
     }
   };
 
-  const handleUnsave = async (postId) => {
-    try {
-      await api.delete(`/users/me/bookmarks/${postId}`);
-      await loadSavedPosts();
-    } catch (err) {
-      console.error("Unsave error", err);
-    }
-  };
-
   if (!isAuthed) {
     return (
       <section className="card">
@@ -108,7 +97,7 @@ export default function Saved() {
               onAnalytics={handleAnalytics}
               bookmarkIds={bookmarkIds}
               onBookmarkChange={loadSavedPosts}
-              onTagClick={(tag) => {}}
+              onTagClick={() => {}}
               onEdit={loadSavedPosts}
             />
           ))

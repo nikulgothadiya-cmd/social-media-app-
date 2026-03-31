@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../api/client.js";
+import api, { normalizeMediaUrl } from "../api/client.js";
 import { Link } from "react-router-dom";
 
 export default function Explore() {
@@ -56,11 +56,11 @@ export default function Explore() {
           {posts.map((post) => (
             <div key={post._id} className="explore-item">
               {post.videoUrl ? (
-                <video src={post.videoUrl} muted />
+                <video src={normalizeMediaUrl(post.videoUrl)} muted />
               ) : post.images?.length ? (
-                <img src={post.images[0]} alt="Post" />
+                <img src={normalizeMediaUrl(post.images[0])} alt="Post" />
               ) : post.imageUrl ? (
-                <img src={post.imageUrl} alt="Post" />
+                <img src={normalizeMediaUrl(post.imageUrl)} alt="Post" />
               ) : (
                 <div className="explore-text">{post.content?.slice(0, 60)}</div>
               )}
