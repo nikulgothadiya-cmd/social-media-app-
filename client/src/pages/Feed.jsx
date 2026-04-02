@@ -31,11 +31,18 @@ export default function Feed({ onAuthChange }) {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [activeStoryIndex, setActiveStoryIndex] = useState(null);
+  const [postsError, setPostsError] = useState("");
 
   const loadPosts = async (tag) => {
-    const url = tag ? `/posts?tag=${encodeURIComponent(tag)}` : "/posts";
-    const { data } = await api.get(url);
-    setPosts(data.posts || []);
+    try {
+      const url = tag ? `/posts?tag=${encodeURIComponent(tag)}` : "/posts";
+      const { data } = await api.get(url);
+      setPosts(data.posts || []);
+      setPostsError("");
+    } catch (err) {
+      console.error("Failed to load posts", err);
+      setPostsError("Couldn't load posts. Please check your connection and try again.");
+    }
   };
 
   const loadTrending = async () => {
@@ -295,7 +302,7 @@ export default function Feed({ onAuthChange }) {
                 role="button"
                 tabIndex={0}
               >
-                <img src={story.imageUrl} alt={story.author?.username} />
+                <img src={normalizeMediaUrl(story.imageUrl)} alt={story.author?.username} />
                 <div className="story-meta">
                   <strong>
                     @{story.author?.username || "user"}
@@ -438,12 +445,18 @@ export default function Feed({ onAuthChange }) {
       )}
 
       <div className="list">
+        {postsError && <p className="error">{postsError}</p>}
+        {!postsError && posts.length === 0 && <p className="muted">No posts to show yet.</p>}
         {posts.map((post) => (
           <article key={post._id} className="card">
             <div className="post-header">
               <div className="post-author">
                 {post.author?.avatarUrl ? (
-                  <img className="avatar" src={post.author.avatarUrl} alt={post.author.username} />
+                  <img
+                    className="avatar"
+                    src={normalizeMediaUrl(post.author.avatarUrl)}
+                    alt={post.author.username}
+                  />
                 ) : (
                   <div className="avatar fallback">{post.author?.username?.[0] || "U"}</div>
                 )}

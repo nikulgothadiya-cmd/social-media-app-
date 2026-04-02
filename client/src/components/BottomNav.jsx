@@ -2,12 +2,14 @@ import { useNavigate } from "react-router-dom";
 
 export default function BottomNav() {
   const navigate = useNavigate();
+  const username = localStorage.getItem("username");
+
   const buttons = [
     { label: "Home", icon: "🏠", to: "/" },
     { label: "Reels", icon: "🎞️", to: "/reels" },
     { label: "Chats", icon: "💬", to: "/chat" },
-    { label: "Post", icon: "➕", to: "/create" },
-    { label: "Profile", icon: "👤", to: "/profile/me" }
+    { label: "Post", icon: "⤴", to: "/create" },
+    { label: "Profile", icon: "👤", to: username ? `/u/${username}` : "/login" }
   ];
 
   return (

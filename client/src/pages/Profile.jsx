@@ -14,6 +14,7 @@ export default function Profile() {
   const [listType, setListType] = useState(null); // "followers" or "following"
   const [listUsers, setListUsers] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [postsError, setPostsError] = useState("");
   const isAuthed = !!getToken();
 
   const loadProfile = async () => {
@@ -28,11 +29,13 @@ export default function Profile() {
 
   const loadPosts = async () => {
     setPostsLoading(true);
+    setPostsError("");
     try {
       const { data } = await api.get(`/posts?author=${username}`);
       setPosts(data.posts || []);
     } catch (err) {
       console.error("Failed to load posts", err);
+      setPostsError("Couldn't load posts for this user.");
     } finally {
       setPostsLoading(false);
     }
@@ -113,6 +116,16 @@ export default function Profile() {
     setListUsers([]);
   };
 
+  if (!isAuthed) {
+    return (
+      <section className="card">
+        <h1>Profile</h1>
+        <p className="muted">Login to view profile details.</p>
+        <Link to="/login">Go to login</Link>
+      </section>
+    );
+  }
+
   if (error) {
     return (
       <section className="card">
@@ -141,6 +154,7 @@ export default function Profile() {
               className="avatar large"
               src={normalizeMediaUrl(profile.avatarUrl)}
               alt={profile.username}
+              referrerPolicy="no-referrer"
             />
           ) : (
             <div className="avatar large fallback">
@@ -277,6 +291,8 @@ export default function Profile() {
         <h2 className="section-title">Posts</h2>
         {postsLoading ? (
           <p className="muted">Loading posts...</p>
+        ) : postsError ? (
+          <p className="error">{postsError}</p>
         ) : posts.length ? (
           posts.map((post) => (
             <article key={post._id} className="card post-compact">

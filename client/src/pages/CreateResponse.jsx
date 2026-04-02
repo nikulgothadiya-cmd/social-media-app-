@@ -1,321 +1,175 @@
-import { useEffect, useMemo, useState } from "react";
-import api from "../api/client.js";
+import { useEffect, useState } from "react";
+import api, { normalizeMediaUrl } from "../api/client.js";
 import { getToken } from "../api/token.js";
 
-const tones = [
-  { id: "supportive", label: "Supportive", desc: "Warm, validating, and friendly." },
-  { id: "professional", label: "Professional", desc: "Clear, structured, and direct." },
-  { id: "playful", label: "Playful", desc: "Light, witty, and upbeat." },
-];
-
-const audiences = [
-  { id: "public", label: "Public Reply", meta: "Visible to everyone" },
-  { id: "followers", label: "Followers Only", meta: "Only your followers" },
-  { id: "private", label: "Private Message", meta: "One-on-one" },
-];
-
+// Simple posts list page (replaces the old CreateResponse form)
 export default function CreateResponse() {
-  const [tone, setTone] = useState("supportive");
-  const [audience, setAudience] = useState("public");
-  const [title, setTitle] = useState("");
-  const [draft, setDraft] = useState("");
-  const [status, setStatus] = useState("");
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [sending, setSending] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [recent, setRecent] = useState([]);
-  const [lastDraftId, setLastDraftId] = useState(null);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [prompt, setPrompt] = useState(null);
+  const [content, setContent] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageUrls, setImageUrls] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [posting, setPosting] = useState(false);
   const isAuthed = !!getToken();
 
-  const selectedTone = useMemo(
-    () => tones.find((item) => item.id === tone),
-    [tone]
-  );
-
-  const loadRecent = async () => {
-    const { data } = await api.get("/responses?status=sent&limit=3");
-    setRecent(data.responses || []);
-  };
-
-  const loadLatestDraft = async () => {
-    const { data } = await api.get("/responses?status=draft&limit=1");
-    const draftItem = data.responses?.[0];
-    if (!draftItem) return;
-    setLastDraftId(draftItem._id);
-    setTitle(draftItem.title || "");
-    setDraft(draftItem.body || "");
-    setTone(draftItem.tone || "supportive");
-    setAudience(draftItem.audience || "public");
-    setStatus("Draft restored");
-  };
-
-  const loadPrompt = async () => {
-    const { data } = await api.get("/notifications");
-    const latest = data.notifications?.[0];
-    if (!latest) return;
-    setPrompt(latest);
+  const loadPosts = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { data } = await api.get("/posts?limit=25");
+      setPosts(data.posts || []);
+    } catch (err) {
+      console.error("Failed to load posts", err);
+      setError("Could not load posts. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    if (!isAuthed) return;
-    loadRecent().catch(() => {});
-    loadLatestDraft().catch(() => {});
-    loadPrompt().catch(() => {});
-  }, [isAuthed]);
+    loadPosts();
+  }, []);
 
-  const handleSaveDraft = async () => {
-    if (!isAuthed) {
-      setError("Login to save a draft.");
-      return;
-    }
-    setError("");
-    setStatus("");
-    setSaving(true);
-    const payload = {
-      title,
-      body: draft,
-      tone,
-      audience,
-      status: "draft",
-      context: prompt?.post?.content || ""
-    };
+  const handleUpload = async (files) => {
+    const list = Array.from(files || []);
+    if (!list.length) return;
+    const form = new FormData();
+    list.forEach((file) => form.append("images", file));
+    setUploading(true);
     try {
-      const { data } = lastDraftId
-        ? await api.put(`/responses/${lastDraftId}`, payload)
-        : await api.post("/responses", payload);
-      setLastDraftId(data.response?._id || lastDraftId);
-      setStatus("Draft saved");
-    } catch (err) {
-      setError(err.response?.data?.message || "Unable to save draft");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSend = async () => {
-    if (!isAuthed) {
-      setError("Login to send a response.");
-      return;
-    }
-    if (!draft.trim()) {
-      setError("Response body is required to send.");
-      return;
-    }
-    setError("");
-    setStatus("");
-    setSending(true);
-    try {
-      await api.post("/responses", {
-        title,
-        body: draft,
-        tone,
-        audience,
-        status: "sent",
-        context: prompt?.post?.content || ""
+      const { data } = await api.post("/uploads", form, {
+        headers: { "Content-Type": "multipart/form-data" }
       });
-      setShowConfirm(true);
-      setTitle("");
-      setDraft("");
-      setLastDraftId(null);
-      await loadRecent();
-    } catch (err) {
-      setError(err.response?.data?.message || "Unable to send response");
+      if (data.urls) {
+        setImageUrls(data.urls.map((u) => normalizeMediaUrl(u)));
+        setImageUrl("");
+      } else if (data.url) {
+        setImageUrl(normalizeMediaUrl(data.url));
+        setImageUrls([]);
+      }
     } finally {
-      setSending(false);
+      setUploading(false);
     }
   };
 
-  const promptTitle = prompt?.actor?.username
-    ? `@${prompt.actor.username}`
-    : "A new comment";
-  const promptText = prompt?.post?.content
-    ? `"${prompt.post.content.slice(0, 120)}${prompt.post.content.length > 120 ? "..." : ""}"`
-    : "“Share a helpful tip that keeps the thread moving.”";
+  const handleCreatePost = async (e) => {
+    e.preventDefault();
+    if (!isAuthed) {
+      setError("Login to create a post.");
+      return;
+    }
+    if (!content.trim() && !imageUrl && imageUrls.length === 0) return;
+    setPosting(true);
+    try {
+      await api.post("/posts", { content, imageUrl, imageUrls });
+      setContent("");
+      setImageUrl("");
+      setImageUrls([]);
+      await loadPosts();
+    } catch (err) {
+      console.error("Failed to create post", err);
+      setError(err.response?.data?.message || "Could not create post.");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="card">
+        <h1>Posts</h1>
+        <p className="muted">Loading…</p>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="card">
+        <h1>Posts</h1>
+        <p className="error">{error}</p>
+        <button onClick={loadPosts}>Retry</button>
+      </section>
+    );
+  }
 
   return (
-    <section className="response-create">
-      <div className="response-hero">
-        <div className="response-hero-copy">
-          <p className="response-eyebrow">Create Response</p>
-          <h1>Shape the conversation with a clear, confident reply.</h1>
-          <p className="muted">
-            Pick a tone, set the audience, and draft something that feels
-            intentional. Preview it, save it, and send when you are ready.
-          </p>
-          <div className="response-hero-actions">
-            <button onClick={handleSend} disabled={sending}>
-              {sending ? "Sending..." : "Send Response"}
-            </button>
-            <button className="ghost" onClick={handleSaveDraft} disabled={saving}>
-              {saving ? "Saving..." : "Save Draft"}
-            </button>
-          </div>
-          {(status || error) && (
-            <div className={`response-status ${error ? "error" : ""}`}>
-              {error || status}
-            </div>
-          )}
+    <section className="card">
+      <h1>Posts</h1>
+
+      <form className="card" onSubmit={handleCreatePost} style={{ marginBottom: "16px" }}>
+        <h2 className="section-title">Create Post</h2>
+        <textarea
+          placeholder="What's on your mind?"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          rows={3}
+        />
+        <div className="upload-row">
+          <input type="file" accept="image/*" multiple onChange={(e) => handleUpload(e.target.files)} />
+          {uploading && <span className="muted small">Uploading...</span>}
         </div>
-        <div className="response-hero-card">
-          <div className="response-mini-header">
-            <div className="avatar fallback">
-              {prompt?.actor?.username?.[0]?.toUpperCase() || "AR"}
-            </div>
-            <div>
-              <strong>{promptTitle}</strong>
-              <p className="muted small">
-                {prompt ? `Latest activity · ${prompt.type}` : "Latest activity"}
-              </p>
-            </div>
+        <input
+          placeholder="Image URL (optional)"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+        />
+        {imageUrls.length > 0 ? (
+          <div className="carousel">
+            <img className="post-image preview" src={imageUrls[0]} alt="Preview" />
+            <div className="muted small">+{imageUrls.length - 1} more</div>
           </div>
-          <p className="response-mini-text">{promptText}</p>
-          <div className="response-mini-footer">
-            <span className="response-pill accent">{isAuthed ? "Live" : "Login"}</span>
-            <span className="response-pill">
-              {prompt?.type ? prompt.type.replace("-", " ") : "Suggested"}
-            </span>
-          </div>
-        </div>
-        <div className="response-orbit response-orbit-one" />
-        <div className="response-orbit response-orbit-two" />
-      </div>
+        ) : (
+          imageUrl && <img className="post-image preview" src={imageUrl} alt="Preview" />
+        )}
+        <button type="submit" disabled={posting || (!content.trim() && !imageUrl && imageUrls.length === 0)}>
+          {posting ? "Posting..." : "Post"}
+        </button>
+      </form>
 
-      <div className="response-layout">
-        <div className="response-panel card">
-          <h2 className="section-title">Draft your reply</h2>
-          <label className="response-label">
-            Response title
-            <input
-              placeholder="Short headline for your response"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </label>
-          <label className="response-label">
-            Response body
-            <textarea
-              rows={6}
-              placeholder="Write something kind, helpful, and specific."
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-            />
-          </label>
-          <div className="response-tools">
-            <button className="ghost">Insert template</button>
-            <button className="ghost">Add follow-up question</button>
-            <button className="ghost">Attach link</button>
-          </div>
-
-          <div className="response-divider" />
-
-          <h3 className="section-title">Tone</h3>
-          <div className="response-grid">
-            {tones.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`response-tone ${tone === item.id ? "active" : ""}`}
-                onClick={() => setTone(item.id)}
-              >
-                <strong>{item.label}</strong>
-                <span className="muted small">{item.desc}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="response-sidebar">
-          <div className="card response-card">
-            <h2 className="section-title">Audience</h2>
-            <div className="response-grid">
-              {audiences.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`response-tone ${audience === item.id ? "active" : ""}`}
-                  onClick={() => setAudience(item.id)}
-                >
-                  <strong>{item.label}</strong>
-                  <span className="muted small">{item.meta}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="card response-card">
-            <h2 className="section-title">Preview</h2>
-            <div className="response-preview">
-              <div className="response-preview-header">
-                <div className="avatar fallback">ME</div>
-                <div>
-                  <strong>You</strong>
-                  <p className="muted small">Tone: {selectedTone?.label}</p>
-                </div>
+      {posts.length === 0 ? (
+        <p className="muted">No posts yet.</p>
+      ) : (
+        <div className="list">
+          {posts.map((post) => (
+            <article key={post._id} className="card post-compact">
+              <div className="post-header">
+                <strong>@{post.author?.username || "user"}</strong>
+                <span className="muted small">
+                  {new Date(post.createdAt).toLocaleString()}
+                </span>
               </div>
-              <p>
-                {draft ||
-                  "Thanks for sharing this. Staying consistent gets easier when you choose one small habit and protect it daily."}
-              </p>
-              <div className="response-mini-footer">
-                <span className="response-pill">{audience.replace("-", " ")}</span>
-                <span className="response-pill accent">Ready to send</span>
+              {post.content && <p>{post.content}</p>}
+              {post.images?.length ? (
+                <img
+                  className="post-image"
+                  src={normalizeMediaUrl(post.images[0])}
+                  alt="Post"
+                />
+              ) : post.imageUrl ? (
+                <img
+                  className="post-image"
+                  src={normalizeMediaUrl(post.imageUrl)}
+                  alt="Post"
+                />
+              ) : null}
+              {post.videoUrl && (
+                <video
+                  className="post-video"
+                  src={normalizeMediaUrl(post.videoUrl)}
+                  controls
+                  loop
+                />
+              )}
+              <div className="post-actions">
+                <span className="muted small">
+                  {post.likes?.length || 0} likes · {post.comments?.length || 0} comments
+                </span>
               </div>
-            </div>
-          </div>
-
-          <div className="card response-card">
-            <h2 className="section-title">Recent responses</h2>
-            {recent.length ? (
-              <div className="response-recent">
-                {recent.map((item) => (
-                  <div key={item._id} className="response-recent-item">
-                    <strong>{item.title || "Untitled response"}</strong>
-                    <p className="muted small">
-                      {item.body?.slice(0, 80)}
-                      {item.body?.length > 80 ? "..." : ""}
-                    </p>
-                    <div className="response-mini-footer">
-                      <span className="response-pill">{item.tone}</span>
-                      <span className="response-pill">
-                        {new Date(item.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="muted small">No responses yet.</p>
-            )}
-          </div>
-
-          <div className="card response-card response-guidelines">
-            <h2 className="section-title">Quick checklist</h2>
-            <ul>
-              <li>Open with appreciation</li>
-              <li>Offer one concrete tip</li>
-              <li>Invite a follow-up</li>
-              <li>Keep it under 3 sentences</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {showConfirm && (
-        <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
-          <div className="modal card" onClick={(event) => event.stopPropagation()}>
-            <h2 className="section-title">Response sent</h2>
-            <p className="muted">
-              Your response is live and ready to keep the conversation moving.
-            </p>
-            <div className="response-confirm-actions">
-              <button onClick={() => setShowConfirm(false)}>Close</button>
-              <button className="ghost" onClick={() => setShowConfirm(false)}>
-                Draft another
-              </button>
-            </div>
-          </div>
+            </article>
+          ))}
         </div>
       )}
     </section>

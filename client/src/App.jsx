@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Feed from "./pages/Feed.jsx";
 import Login from "./pages/Login.jsx";
@@ -17,18 +17,36 @@ import Stories from "./pages/Stories.jsx";
 import CreateResponse from "./pages/CreateResponse.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import StoriesBar from "./components/StoriesBar.jsx";
+import api from "./api/client.js";
 
 export default function App() {
+  const location = useLocation();
   const [, setIsAuthed] = useState(!!getToken());
 
   useEffect(() => {
     setIsAuthed(!!getToken());
   }, []);
 
+  useEffect(() => {
+    const syncUsername = async () => {
+      if (!getToken()) return;
+      if (localStorage.getItem("username")) return;
+      try {
+        const { data } = await api.get("/users/me");
+        if (data.user?.username) {
+          localStorage.setItem("username", data.user.username);
+        }
+      } catch (err) {
+        console.warn("Could not sync username", err);
+      }
+    };
+    syncUsername();
+  }, []);
+
   return (
     <div className="app">
       <main className="container" style={{ paddingBottom: "88px" }}>
-        <StoriesBar />
+        {location.pathname === "/" && <StoriesBar />}
         <Routes>
           <Route path="/" element={<Feed onAuthChange={setIsAuthed} />} />
           <Route path="/login" element={<Login onAuthChange={setIsAuthed} />} />
@@ -44,6 +62,15 @@ export default function App() {
           <Route path="/reels" element={<Reels />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/response/new" element={<CreateResponse />} />
+          <Route path="/create" element={<CreateResponse />} />
+          <Route
+            path="/profile/me"
+            element={
+              localStorage.getItem("username")
+                ? <Navigate to={`/u/${localStorage.getItem("username")}`} replace />
+                : <Navigate to="/login" replace />
+            }
+          />
         </Routes>
       </main>
 
